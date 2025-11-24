@@ -13,6 +13,7 @@ throttling, popup detection, and periodic saving to prevent data loss.
 -   Detects and skips popups and empty pages\
 -   Retries on network failures\
 -   Throttles requests to avoid rate-limits\
+-   Colelcts hibernated automations and notes which one is it\
 -   Saves progress at regular intervals\
 -   Exports results to an Excel file (`herefish_automations.xlsx`)
 
