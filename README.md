@@ -1,105 +1,141 @@
-# Herefish Automation Scraper
+# Bullhorn (Herefish) Automation Scraper
 
-This script automates the extraction of automation content from
-**Herefish (Bullhorn Automation)** using Selenium. It logs in, iterates
-through a range of automation URLs, collects their contents, and saves
-everything into an Excel file. The script includes retry logic,
-throttling, popup detection, and periodic saving to prevent data loss.
+This repository contains a Selenium-based Jupyter Notebook that automates the extraction of automation metadata from **Bullhorn / Herefish**.
+
+The scraper is designed to be resilient against session drops, page load failures, and long-running extractions across thousands of automation IDs. It produces a structured Excel report with hibernation status and full automation content.
+
+---
 
 ## Features
 
--   Automated login to the Herefish web app\
--   Scrapes automation pages sequentially by ID\
--   Detects and skips popups and empty pages\
--   Retries on network failures\
--   Throttles requests to avoid rate-limits\
--   Colelcts hibernated automations and notes which one is it\
--   Saves progress at regular intervals\
--   Exports results to an Excel file (`herefish_automations.xlsx`)
+### Automation Coverage
+- Scrapes automation details by iterating through a configurable ID range
+- Detects deleted or non-existent automations via UI popups
+- Extracts:
+  - Automation name
+  - Status label
+  - Full automation content
+  - Hibernation status (TRUE/FALSE)
 
-## Requirements
+### Hibernation Detection
+- Scrapes the full **Hibernated Automations** table first
+- Uses a set-based lookup for fast comparison during scraping
+- Outputs a dedicated Excel sheet with all hibernated automations
 
-### Python Packages
+### Fault Tolerance & Recovery
+- Automatic re-login if the session expires or redirects to login
+- Explicit handling of `InvalidSessionIdException`
+- Driver auto-restart on browser crashes
+- Anti-blank loading logic:
+  - Retries pages that load without content for up to 15 seconds
+  - Reloads until valid content or a definitive popup appears
 
-    pip install selenium pandas openpyxl
+### Progress Persistence
+- Periodic Excel backups during execution to prevent data loss
+- Final Excel export consolidates all results
 
-### WebDriver
+---
 
-Install a compatible WebDriver (ChromeDriver or GeckoDriver).\
-Ensure it is in your PATH or in the same directory as the script.
+## Tech Stack
 
-### Other Requirements
+- Python 3.x
+- Selenium (Chrome WebDriver)
+- Pandas
+- Jupyter Notebook
 
--   Python 3.8+\
--   Valid Herefish login credentials\
--   Stable internet connection
+---
+
+## Setup Requirements
+
+### System Requirements
+- Google Chrome installed
+- Compatible ChromeDriver available on PATH
+- Stable internet connection (long-running session)
+
+### Python Dependencies
+```bash
+pip install selenium pandas
+```
+
+---
 
 ## Configuration
 
 ### Credentials
+The notebook currently expects Herefish credentials to be defined as variables:
 
-Update the credentials section or replace them with environment
-variables:
+```python
+USERNAME = "your_email"
+PASSWORD = "your_password"
+```
 
-    USERNAME = "YOUR_USERNAME_HERE"
-    PASSWORD = "YOUR_PASSWORD_HERE"
+**Important:**  
+Hard-coding credentials is not recommended. For production or shared use, credentials should be supplied via:
+- Environment variables
+- A secrets manager
+- A `.env` file excluded via `.gitignore`
 
-### Automation ID Range
-
-Adjust as needed:
-
-    automation_ids = range(10000, 21676)
-
-### Output File
-
-The script writes results to:
-
-    output_file = "herefish_automations.xlsx"
+---
 
 ## How It Works
 
-1.  Opens the browser and logs into Herefish\
-2.  Iterates over each automation ID\
-3.  Loads the page and checks for a popup\
-4.  Extracts automation text from the main container\
-5.  Saves each successful scrape to memory\
-6.  Writes progress to Excel every few scrapes\
-7.  Retries when network issues occur\
-8.  Saves a final Excel file when complete
+1. Logs into Herefish
+2. Navigates to the Automations page
+3. Scrapes the full **Hibernated Automations** table
+4. Iterates through a defined automation ID range
+5. For each ID:
+   - Detects login redirects
+   - Handles missing automations
+   - Retries blank or stalled pages
+   - Extracts metadata and content
+6. Periodically saves progress to Excel
+7. Produces a final report on completion
 
-Skipped automations include:\
-- Pages that display a popup\
-- Pages that return no content\
-- Pages that fail repeatedly during scraping
+---
 
-## Throttling & Reliability
+## Output
 
--   **Success delay:** 10 seconds\
--   **Failure delay:** 2 seconds\
--   **Network retry wait:** 5 minutes\
--   **Periodic save interval:** Every 2 successful scrapes
+The scraper generates an Excel file with two sheets:
 
-## Output Format
+### `Automations`
+Contains scraped automation data for the requested ID range:
+- `Automation_ID`
+- `Name`
+- `Status`
+- `Is_Hibernated` (TRUE/FALSE)
+- `Content`
+- `Extraction_Notes`
 
-The resulting `herefish_automations.xlsx` file contains two columns:
+### `Hibernated Automations`
+A complete snapshot of all currently hibernated automations at runtime.
 
-  ID      Content
-  ------- -------------------
-  10001   Extracted text...
-  10002   Extracted text...
-  ...     ...
+---
 
-## Notes
+## Performance Notes
 
--   The script relies on specific XPaths that may change if the Herefish
-    UI updates.\
--   Scraping thousands of automations may take several hours depending
-    on your throttling settings.\
--   Ensure you have permission to automate and scrape data from
-    Herefish.
+- Approximate runtime: **~25 minutes per 1,000 automations**
+- Performance depends on network stability and Herefish UI responsiveness
+
+---
+
+## Limitations
+
+- Relies on static XPATH selectors (UI changes may break scraping)
+- Designed for authenticated internal use only
+- Not intended for parallel execution
+
+---
+
+## Intended Use
+
+- Internal automation auditing
+- Migration analysis
+- Documentation and compliance reviews
+- Operational visibility into Bullhorn automations
+
+---
 
 ## Disclaimer
 
-Use this script only if you have authorization to access and extract
-data from your organization's Herefish environment. Respect all internal
-policies and terms of service.
+This tool interacts with a third-party web application through browser automation.  
+Ensure usage complies with Bullhorn / Herefish terms of service and internal company policies.
